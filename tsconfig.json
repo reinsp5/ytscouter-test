@@ -18,6 +18,9 @@
     "paths": {
       "@/*": [
         "src/*"
+      ],
+      "uikit/dist/js/uikit-icons": [
+        "src/uikit-icons"
       ]
     },
     "lib": [

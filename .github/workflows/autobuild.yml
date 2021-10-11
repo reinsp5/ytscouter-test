@@ -1,0 +1,133 @@
+name: ytscouter-build
+on:
+  push:
+    tags:
+    # "v" で始まる Tag 名の push だけをトリガーの対象とする (e.g., "v0.0.2")
+    - 'v*'
+
+jobs: 
+  # Windows版ビルド
+  build-windows: 
+    name: build-windows
+    runs-on: windows-latest
+    # 環境変数
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    # 実行ステップ
+    steps: 
+      - uses: actions/checkout@v2
+      # Node.js v16 使用
+      - name: Use Node.js v15
+        uses: actions/setup-node@v2
+        with: 
+          node-version: '15'
+          cache: yarn
+      # NPM インストール
+      - name: npm install
+        run: npm install
+      # Yarn インストール
+      - name: yarn install
+        run: yarn install
+      # Vue CLI インストール
+      - name: vue cli install
+        run: yarn global add @vue/cli
+      # ビルド
+      - name: build for windows
+        run: yarn run build:win
+      # Artifactに保存
+      - name: save artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: windows_app
+          path: dist_electron/*
+
+  build-macos: 
+    name: build-macos
+    runs-on: macos-latest
+    # 環境変数
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    # 実行ステップ
+    steps: 
+      - uses: actions/checkout@v2
+      # Node.js v16 使用
+      - name: Use Node.js v15
+        uses: actions/setup-node@v2
+        with: 
+          node-version: '15'
+      # NPM インストール
+      - name: npm install
+        run: npm install
+      # Yarn インストール
+      - name: yarn install
+        run: yarn install
+      # Vue CLI インストール
+      - name: vue cli install
+        run: yarn global add @vue/cli
+      # Apple 公証
+      - name: apple codesigning
+        uses: apple-actions/import-codesign-certs@v1
+        with:
+          p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
+          p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
+      # macOS版 ビルド
+      - name: build for macos
+        env:
+          APPLEID: ${{ secrets.APPLEID }}
+          APPLEIDPASS: ${{ secrets.APPLEIDPASS }}
+          ASC_PROVIDER: ${{ secrets.ASC_PROVIDER }}
+        run: |
+          xcrun altool --store-password-in-keychain-item "AC_PASSWORD" -u $APPLEID -p $APPLEIDPASS
+          yarn run build:mac
+      # Artifactに保存
+      - name: save artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: macos_app
+          path: dist_electron/*
+
+  deploy: 
+    name: Deployment
+    needs: [build-windows, build-macos]
+    runs-on: 'ubuntu-latest'
+    steps: 
+      - uses: actions/checkout@v2
+      - name: download windows
+        uses: actions/download-artifact@v2
+        with:
+          name: windows_app
+          path: dist_electron/
+      - name: download macos
+        uses: actions/download-artifact@v2
+        with:
+          name: macos_app
+          path: dist_electron/
+      # Release 作成
+      - name: create release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with: 
+          draft: false
+          files: | 
+            dist_electron/*.exe
+            dist_electron/*.dmg
+            dist_electron/*.zip
+            dist_electron/latest*.yml
+      # デプロイするデータのみをresultフォルダへ複製
+      - name: move installer
+        run: | 
+          mkdir result
+          cp dist_electron/*.dmg result/
+          cp dist_electron/*.exe result/
+      # resultフォルダの中身をサーバーへデプロイ
+      - name: rsync deployments
+        uses: burnett01/rsync-deployments@5.1
+        with:
+          switches: -ahvzr
+          path: result/*
+          remote_path: /var/products/ytscouter/src/storage/app/private/
+          remote_host: you-march.com
+          remote_user: root
+          remote_key: ${{ secrets.DEPLOY_KEY }}
