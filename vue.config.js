@@ -11,8 +11,7 @@ module.exports = {
             provider: "github",
             owner: "reinsp5",
             repo: "ytscouter-test",
-            token: "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",
-            private: true
+            private: false
           }
         ],
         win: {
