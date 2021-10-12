@@ -4,14 +4,14 @@ module.exports = {
       nodeIntegration: true,
       builderOptions: {
         productName: "ytScouter",
-        appId: "jp.you-march.ytscouter",
+        appId: "work.reinsp5.ytscouter-test",
         afterSign: "./scripts/notarize.js",
         publish: [
           {
             provider: "github",
-            owner: "you-march",
-            repo: "ytscouter-client",
-            token: "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",
+            owner: "reinsp5",
+            repo: "ytscouter-test",
+            token: "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",
             private: true
           }
         ],
