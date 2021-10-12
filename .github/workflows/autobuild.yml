@@ -40,7 +40,9 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: windows_app
-          path: dist_electron/*
+          path: |
+            dist_electron/*.exe
+            dist_electron/latest*.yml
 
   build-macos:
     name: build-macos
@@ -87,7 +89,10 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: macos_app
-          path: dist_electron/*
+          path: |
+            dist_electron/*.dmg
+            dist_electron/*.zip
+            dist_electron/latest*.yml
 
   deploy:
     name: Deployment
@@ -117,18 +122,18 @@ jobs:
             dist_electron/*.zip
             dist_electron/latest*.yml
       # デプロイするデータのみをresultフォルダへ複製
-      - name: move installer
-        run: |
-          mkdir result
-          cp dist_electron/*.dmg result/
-          cp dist_electron/*.exe result/
+      #- name: move installer
+      #  run: |
+      #    mkdir result
+      #    cp dist_electron/*.dmg result/
+      #    cp dist_electron/*.exe result/
       # resultフォルダの中身をサーバーへデプロイ
-      - name: rsync deployments
-        uses: burnett01/rsync-deployments@5.1
-        with:
-          switches: -ahvzr
-          path: result/*
-          remote_path: /var/products/ytscouter/src/storage/app/private/
-          remote_host: you-march.com
-          remote_user: root
-          remote_key: ${{ secrets.DEPLOY_KEY }}
+      #- name: rsync deployments
+      #  uses: burnett01/rsync-deployments@5.1
+      #  with:
+      #    switches: -ahvzr
+      #    path: result/*
+      #    remote_path: /var/products/ytscouter/src/storage/app/private/
+      #    remote_host: you-march.com
+      #    remote_user: root
+      #    remote_key: ${{ secrets.DEPLOY_KEY }}
