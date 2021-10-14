@@ -2,10 +2,10 @@
   <canvas :id="id"></canvas>
 </template>
 <style>
-  canvas {
-    max-width: 15vw;
-    max-height: 15vw;
-  }
+canvas {
+  max-width: 15vw;
+  max-height: 15vw;
+}
 </style>
 
 <script>
